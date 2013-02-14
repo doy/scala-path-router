@@ -93,9 +93,24 @@ class Route[T] (
   override def toString = path
 
   def pathWithMapping (mapping: Map[String, String]): Option[String] = {
-    if (requiredVariableComponents.forall(mapping.isDefinedAt)) {
+    val requiredDefaults = defaults.keys.filter { k =>
+      mapping.isDefinedAt(k) && !hasVariable(k)
+    }
+    if (requiredDefaults.forall(k => defaults(k) == mapping(k)) &&
+        requiredVariableComponents.forall(mapping.isDefinedAt)) {
       val boundComponents = components.flatMap {
-        case Optional(v) => (mapping get v).map(validComponentValue(v, _))
+        case Optional(v) => {
+          val component = (mapping get v).flatMap(validComponentValue(v, _))
+          defaults get v match {
+            case Some(default) => {
+              component.flatMap {
+                case `default` => None
+                case c         => Some(c)
+              }
+            }
+            case None => component
+          }
+        }
         case Variable(v) => validComponentValue(v, (mapping(v)))
         case literal     => Some(literal)
       }
@@ -114,6 +129,8 @@ class Route[T] (
 
   lazy val optionalVariableComponents =
     components.filter(isOptional).flatMap(getComponentName)
+
+  lazy val hasVariable = components.flatMap(getComponentName).toSet
 
   private val Optional = """^\?:(.*)$""".r
   private val Variable = """^\??:(.*)$""".r
