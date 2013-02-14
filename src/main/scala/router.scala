@@ -92,6 +92,20 @@ class Route[T] (
 
   override def toString = path
 
+  def pathWithMapping (mapping: Map[String, String]): Option[String] = {
+    if (requiredVariableComponents.forall(mapping.isDefinedAt)) {
+      val boundComponents = components.flatMap {
+        case Optional(v) => (mapping get v).map(validComponentValue(v, _))
+        case Variable(v) => validComponentValue(v, (mapping(v)))
+        case literal     => Some(literal)
+      }
+      Some(boundComponents.mkString("/"))
+    }
+    else {
+      None
+    }
+  }
+
   private lazy val components =
     path.split("/").filter(_.length > 0)
 
@@ -124,6 +138,13 @@ class Route[T] (
       case Some(rx) => rx.findFirstIn(component).nonEmpty
       case None     => true
     }
+
+  private def validComponentValue (
+    name:      String,
+    component: String
+  ): Option[String] = {
+    if (validate(name, component)) { Some(component) } else { None }
+  }
 }
 
 class Match[T] (
