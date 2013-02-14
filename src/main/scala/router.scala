@@ -42,8 +42,55 @@ class Router[T] {
     _route(path.split("/"), routes.toList)
   }
 
-  def uriFor (mapping: Map[String, String]): String = {
-    throw new Error("unimplemented")
+  private class AmbiguousRouteMapping(
+    mapping: Map[String, String],
+    paths:   Seq[String]
+  ) extends RuntimeException {
+    override def getMessage (): String = {
+      "Ambiguous path descriptor (specified keys " +
+      mapping.keys.mkString(", ")                  +
+      "): could match paths "                      +
+      paths.mkString(", ")
+    }
+  }
+
+  def uriFor (mapping: Map[String, String]): Option[String] = {
+    // first remove all routes that can't possibly match
+    // - if the route requires a variable component that doesn't exist in the
+    //   mapping, then it can't match
+    // - if the route contains a value for a variable component that doesn't
+    //   pass the validation for that component, it can't match
+    // - if the route contains a default value, and that component also exists
+    //   in the mapping, then the values must match
+    val possible = routes.flatMap(r => {
+      r.pathWithMapping(mapping) match {
+        case Some(path) => Some(r -> path)
+        case None       => None
+      }
+    })
+
+    possible.toList match {
+      case Nil              => None
+      case (r, path) :: Nil => Some(path)
+      case rs               => {
+        // then try to disambiguate the remaining possibilities
+        // - we want the route with the fewest number of "extra" items in the
+        //   mapping, after removing defaults and variable path components
+        val possibleByRemainder = possible.groupBy { case (r, path) => {
+          (mapping.keys.toSet --
+            r.defaults.keys.toSet --
+            r.requiredVariableComponents --
+            r.optionalVariableComponents).size
+        } }
+        val found = possibleByRemainder(possibleByRemainder.keys.min)
+        found.toList match {
+          case Nil              => None
+          case (r, path) :: Nil => Some(path)
+          case rs               =>
+            throw new AmbiguousRouteMapping(mapping, rs.map(_._1.path))
+        }
+      }
+    }
   }
 }
 

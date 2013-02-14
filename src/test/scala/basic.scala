@@ -57,6 +57,7 @@ class Basic extends FunSuite {
   )
 
   def testRoute (router: Router[Boolean], path: String, mapping: Map[String, String]) {
+    assert(path === router.uriFor(mapping).get)
     val om = router.route(path)
     assert(om.isDefined)
     val m = om.get
