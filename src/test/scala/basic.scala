@@ -131,13 +131,12 @@ class Basic extends FunSuite {
       )
     )
 
-    // TODO support optionals
-    // testRoute(
-    //   router, "test/x1", Map(
-    //     "controller" -> "test",
-    //     "x"          -> "x1",
-    //     "y"          -> "y"
-    //   )
-    // )
+    testRoute(
+      router, "test/x1", Map(
+        "controller" -> "test",
+        "x"          -> "x1",
+        "y"          -> "y"
+      )
+    )
   }
 }

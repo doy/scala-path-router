@@ -58,7 +58,7 @@ class Route[T] (
     components: Seq[String]         = components,
     mapping:    Map[String, String] = defaults
   ): Option[Match[T]] = {
-    if (components.length == 0 && parts.length == 0) {
+    if (components.filter(!isOptional(_)).length == 0 && parts.length == 0) {
       Some(new Match[T](path, mapping, target))
     }
     else if (components.length == 0 || parts.length == 0) {
@@ -67,7 +67,12 @@ class Route[T] (
     else {
       components.head match {
         case Optional(name) => {
-          throw new Error("unsupported")
+          if (validate(name, parts.head)) {
+            route(parts.tail, components.tail, mapping + (name -> parts.head))
+          }
+          else {
+            route(parts, components.tail, mapping)
+          }
         }
         case Variable(name) => {
           if (validate(name, parts.head)) {
