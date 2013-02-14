@@ -95,19 +95,11 @@ class Route[T] (
   private lazy val components =
     path.split("/").filter(_.length > 0)
 
-  private lazy val length =
-    components.length
+  lazy val requiredVariableComponents =
+    components.filter(!isOptional(_)).flatMap(getComponentName)
 
-  private lazy val lengthWithoutOptionals =
-    components.filter(!isOptional(_)).length
-
-  private lazy val requiredVariableComponentNames =
-    for (c <- components if isVariable(c) && !isOptional(c))
-      yield getComponentName(c)
-
-  private lazy val optionalVariableComponentNames =
-    for (c <- components if isVariable(c) && isOptional(c))
-      yield getComponentName(c)
+  lazy val optionalVariableComponents =
+    components.filter(isOptional).flatMap(getComponentName)
 
   private val Optional = """^\?:(.*)$""".r
   private val Variable = """^\??:(.*)$""".r
