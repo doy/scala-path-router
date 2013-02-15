@@ -65,12 +65,6 @@ class Basic extends FunSuite {
     assert(m.target === true)
   }
 
-  test ("routes are created in the correct order") {
-    assert(router.routes(0).path === "blog")
-    assert(router.routes(2).path === "blog/:action/:id")
-    assert(router.routes(3).path === "test/?:x/?:y")
-  }
-
   test ("routes match properly") {
     testRoute(
       router, "blog", Map(
