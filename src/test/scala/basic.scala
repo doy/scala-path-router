@@ -2,7 +2,7 @@ import org.scalatest.FunSuite
 
 import router.Router
 
-class Basic extends FunSuite {
+class Basic extends FunSuite with RouterHelpers {
   val yearRx  = """\d{4}""".r
   val monthRx = """\d|10|11|12""".r
   val dayRx   = """\d|[12]\d|30|31""".r
@@ -53,16 +53,6 @@ class Basic extends FunSuite {
       "y"          -> "y"
     )
   )
-
-  def testRoute (router: Router[Boolean], path: String, mapping: Map[String, String]) {
-    assert(path === router.uriFor(mapping).get)
-    val om = router.route(path)
-    assert(om.isDefined)
-    val m = om.get
-    assert(m.mapping.size == mapping.size)
-    assert(m.mapping.forall { case (k, v) => mapping(k) == v })
-    assert(m.target === true)
-  }
 
   test ("routes match properly") {
     testRoute(
