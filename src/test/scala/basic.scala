@@ -8,6 +8,16 @@ class Basic extends FunSuite {
   val dayRx   = """\d|[12]\d|30|31""".r
 
   val router = new Router[Boolean]
+
+  router addRoute (
+    "blog",
+    true,
+    defaults = Map(
+      "controller" -> "blog",
+      "action"     -> "index"
+    )
+  )
+
   router addRoute (
     "blog/:year/:month/:day",
     true,
@@ -22,19 +32,9 @@ class Basic extends FunSuite {
     )
   )
 
-  router insertRoute (
-    "blog",
-    true,
-    defaults = Map(
-      "controller" -> "blog",
-      "action"     -> "index"
-    )
-  )
-
-  router insertRoute (
+  router addRoute (
     "blog/:action/:id",
     true,
-    at = 2,
     defaults = Map(
       "controller" -> "blog"
     ),
@@ -44,10 +44,9 @@ class Basic extends FunSuite {
     )
   )
 
-  router insertRoute (
+  router addRoute (
     "test/?:x/?:y",
     true,
-    at = 1000000,
     defaults = Map(
       "controller" -> "test",
       "x"          -> "x",

@@ -13,19 +13,6 @@ class Router[T] {
     routes += new Route(path, defaults, validations, target)
   }
 
-  def insertRoute (
-    path:        String,
-    target:      T,
-    defaults:    Map[String, String] = Map(),
-    validations: Map[String, Regex]  = Map(),
-    at:          Int                 = 0
-  ) {
-    routes insert (
-      at min routes.length,
-      new Route(path, defaults, validations, target)
-    )
-  }
-
   def route (path: String): Option[Match[T]] = {
     def testRoutes (
       components: Seq[String],
