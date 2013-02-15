@@ -1,6 +1,6 @@
 package router
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 
 class Router[T] {
@@ -35,7 +35,7 @@ class Router[T] {
     //   pass the validation for that component, it can't match
     // - if the route contains a default value, and that component also exists
     //   in the mapping, then the values must match
-    val possible = routes.flatMap(r => {
+    val possible = routes.toList.flatMap(r => {
       r.pathWithMapping(mapping) match {
         case Some(path) => Some(r -> path)
         case None       => None
@@ -43,9 +43,9 @@ class Router[T] {
     })
 
     possible match {
-      case Seq()          => None
-      case Seq((r, path)) => Some(path)
-      case _                      => {
+      case Nil              => None
+      case (r, path) :: Nil => Some(path)
+      case _                => {
         // then try to disambiguate the remaining possibilities
         // - we want the route with the fewest number of "extra" items in the
         //   mapping, after removing defaults and variable path components
@@ -54,16 +54,16 @@ class Router[T] {
         } }
         val found = possibleByRemainder(possibleByRemainder.keys.min)
         found match {
-          case Seq()          => None
-          case Seq((r, path)) => Some(path)
-          case rs                     =>
+          case Nil              => None
+          case (r, path) :: Nil => Some(path)
+          case rs               =>
             throw new AmbiguousRouteMapping(mapping, rs.map(_._1.path))
         }
       }
     }
   }
 
-  private val routes = new ArrayBuffer[Route]()
+  private val routes = new ListBuffer[Route]
 
   private class Route (
     val path:        String,
