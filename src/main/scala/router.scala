@@ -24,7 +24,12 @@ class Router[T] {
       }
       case _ => None
     }
-    testRoutes(path.split("/"), routes.toList)
+    val components = path.split("/").filter {
+      case ""  => false
+      case "." => false // XXX do we want to keep this?
+      case _   => true
+    }
+    testRoutes(components, routes.toList)
   }
 
   def uriFor (mapping: Map[String, String]): Option[String] = {
