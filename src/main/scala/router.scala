@@ -29,17 +29,17 @@ class Router[T] {
   }
 
   def route (path: String): Option[Match[T]] = {
-    def _route (
+    def testRoutes (
       components: Seq[String],
       routes:     List[Route[T]]
     ): Option[Match[T]] = routes match {
       case r :: rs => r.route(components) match {
         case Some(found) => Some(found)
-        case None        => _route(components, rs)
+        case None        => testRoutes(components, rs)
       }
       case _ => None
     }
-    _route(path.split("/"), routes.toList)
+    testRoutes(path.split("/"), routes.toList)
   }
 
   private class AmbiguousRouteMapping(
@@ -77,10 +77,7 @@ class Router[T] {
         // - we want the route with the fewest number of "extra" items in the
         //   mapping, after removing defaults and variable path components
         val possibleByRemainder = possible.groupBy { case (r, path) => {
-          (mapping.keys.toSet --
-            r.defaults.keys.toSet --
-            r.requiredVariableComponents --
-            r.optionalVariableComponents).size
+          (mapping.keys.toSet -- r.defaults.keys.toSet -- r.variables).size
         } }
         val found = possibleByRemainder(possibleByRemainder.keys.min)
         found.toList match {
@@ -100,6 +97,10 @@ class Route[T] (
   val validations: Map[String, Regex],
   val target:      T
 ) {
+  import Route._
+
+  lazy val variables = components.flatMap(getVariableName)
+
   def route(
     parts:      Seq[String],
     components: Seq[String]         = components,
@@ -141,10 +142,10 @@ class Route[T] (
 
   def pathWithMapping (mapping: Map[String, String]): Option[String] = {
     val requiredDefaults = defaults.keys.filter { k =>
-      mapping.isDefinedAt(k) && !hasVariable(k)
+      mapping.isDefinedAt(k) && !variables.contains(k)
     }
     if (requiredDefaults.forall(k => defaults(k) == mapping(k)) &&
-        requiredVariableComponents.forall(mapping.isDefinedAt)) {
+        requiredVariables.forall(mapping.isDefinedAt)) {
       val boundComponents = components.flatMap {
         case Optional(v) => {
           val component = (mapping get v).flatMap(validComponentValue(v, _))
@@ -171,44 +172,35 @@ class Route[T] (
   private lazy val components =
     path.split("/").filter(_.length > 0)
 
-  lazy val requiredVariableComponents =
-    components.filter(!isOptional(_)).flatMap(getComponentName)
+  private lazy val requiredVariables =
+    components.filter(!isOptional(_)).flatMap(getVariableName)
 
-  lazy val optionalVariableComponents =
-    components.filter(isOptional).flatMap(getComponentName)
+  private lazy val hasVariable = variables.toSet
 
-  lazy val hasVariable = components.flatMap(getComponentName).toSet
+  private def isOptional (component: String) =
+    Optional.findFirstIn(component).nonEmpty
 
-  private val Optional = """^\?:(.*)$""".r
-  private val Variable = """^\??:(.*)$""".r
+  private def isVariable (component: String) =
+    Variable.findFirstIn(component).nonEmpty
 
-  private def isOptional (component: String): Boolean = component match {
-    case Optional(_) => true
-    case _           => false
-  }
-
-  private def isVariable (component: String): Boolean = component match {
-    case Variable(_) => true
-    case _           => false
-  }
-
-  private def getComponentName (component: String) = component match {
+  private def getVariableName (component: String) = component match {
     case Variable(name) => Some(name)
     case _              => None
   }
 
-  private def validate (name: String, component: String): Boolean =
+  private def validate (name: String, component: String) =
     validations get name match {
       case Some(rx) => rx.findFirstIn(component).nonEmpty
       case None     => true
     }
 
-  private def validComponentValue (
-    name:      String,
-    component: String
-  ): Option[String] = {
+  private def validComponentValue (name: String, component: String) =
     if (validate(name, component)) { Some(component) } else { None }
-  }
+}
+
+object Route {
+  private val Optional = """^\?:(.*)$""".r
+  private val Variable = """^\??:(.*)$""".r
 }
 
 class Match[T] (
