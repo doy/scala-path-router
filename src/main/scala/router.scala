@@ -55,10 +55,10 @@ class Router[T] {
       }
     })
 
-    possible.toList match {
-      case Nil              => None
-      case (r, path) :: Nil => Some(path)
-      case rs               => {
+    possible match {
+      case Seq()          => None
+      case Seq((r, path)) => Some(path)
+      case _                      => {
         // then try to disambiguate the remaining possibilities
         // - we want the route with the fewest number of "extra" items in the
         //   mapping, after removing defaults and variable path components
@@ -66,10 +66,10 @@ class Router[T] {
           (mapping.keys.toSet -- r.defaults.keys.toSet -- r.variables).size
         } }
         val found = possibleByRemainder(possibleByRemainder.keys.min)
-        found.toList match {
-          case Nil              => None
-          case (r, path) :: Nil => Some(path)
-          case rs               =>
+        found match {
+          case Seq()          => None
+          case Seq((r, path)) => Some(path)
+          case rs                     =>
             throw new AmbiguousRouteMapping(mapping, rs.map(_._1.path))
         }
       }
