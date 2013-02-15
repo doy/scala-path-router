@@ -1,8 +1,9 @@
 import org.scalatest.FunSuite
+import router.test._
 
 import router.Router
 
-class Basic extends FunSuite with RouterHelpers {
+class Basic extends FunSuite {
   val yearRx  = """\d{4}""".r
   val monthRx = """\d|10|11|12""".r
   val dayRx   = """\d|[12]\d|30|31""".r
@@ -55,15 +56,15 @@ class Basic extends FunSuite with RouterHelpers {
   )
 
   test ("routes match properly") {
-    testRoute(
-      router, "blog", Map(
+    assert(
+      router matches "blog", Map(
         "controller" -> "blog",
         "action"     -> "index"
       )
     )
 
-    testRoute(
-      router, "blog/2006/12/5", Map(
+    assert(
+      router matches "blog/2006/12/5", Map(
         "controller" -> "blog",
         "action"     -> "show_date",
         "year"       -> "2006",
@@ -72,8 +73,8 @@ class Basic extends FunSuite with RouterHelpers {
       )
     )
 
-    testRoute(
-      router, "blog/1920/12/10", Map(
+    assert(
+      router matches "blog/1920/12/10", Map(
         "controller" -> "blog",
         "action"     -> "show_date",
         "year"       -> "1920",
@@ -82,40 +83,40 @@ class Basic extends FunSuite with RouterHelpers {
       )
     )
 
-    testRoute(
-      router, "blog/edit/5", Map(
+    assert(
+      router matches "blog/edit/5", Map(
         "controller" -> "blog",
         "action"     -> "edit",
         "id"         -> "5"
       )
     )
 
-    testRoute(
-      router, "blog/show/123", Map(
+    assert(
+      router matches "blog/show/123", Map(
         "controller" -> "blog",
         "action"     -> "show",
         "id"         -> "123"
       )
     )
 
-    testRoute(
-      router, "blog/some_crazy_long_winded_action_name/12356789101112131151", Map(
+    assert(
+      router matches "blog/some_crazy_long_winded_action_name/12356789101112131151", Map(
         "controller" -> "blog",
         "action"     -> "some_crazy_long_winded_action_name",
         "id"         -> "12356789101112131151"
       )
     )
 
-    testRoute(
-      router, "blog/delete/5", Map(
+    assert(
+      router matches "blog/delete/5", Map(
         "controller" -> "blog",
         "action"     -> "delete",
         "id"         -> "5"
       )
     )
 
-    testRoute(
-      router, "test/x1", Map(
+    assert(
+      router matches "test/x1", Map(
         "controller" -> "test",
         "x"          -> "x1",
         "y"          -> "y"
