@@ -1,9 +1,10 @@
+package org.perl8.router
+
 import org.scalatest.FunSuite
-import router.test._
 
-import router.Router
+import org.perl8.router.test._
 
-class Basic extends FunSuite {
+class BasicTest extends FunSuite {
   val yearRx  = """\d{4}""".r
   val monthRx = """\d|10|11|12""".r
   val dayRx   = """\d|[12]\d|30|31""".r

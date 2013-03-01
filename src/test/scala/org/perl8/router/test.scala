@@ -1,11 +1,11 @@
-package router
+package org.perl8.router
 
 object test {
   import language.implicitConversions
 
   class RouterHelperOps[T] (router: Router[T]) {
     private def assert (condition: Boolean, msg: String) = {
-      if (condition) { None } else { Some(msg) }
+      if (condition) None else Some(msg)
     }
 
     def matches (path: String) = {

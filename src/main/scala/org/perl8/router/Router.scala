@@ -1,4 +1,4 @@
-package router
+package org.perl8.router
 
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
@@ -7,29 +7,19 @@ class Router[T] {
   def addRoute (
     path:        String,
     target:      T,
-    defaults:    Map[String, String] = Map(),
-    validations: Map[String, Regex]  = Map()
+    defaults:    Map[String, String] = Map.empty,
+    validations: Map[String, Regex]  = Map.empty
   ) {
     routes += new Route(path, defaults, validations, target)
   }
 
   def route (path: String): Option[Match[T]] = {
-    def testRoutes (
-      components: Seq[String],
-      routes:     List[Route]
-    ): Option[Match[T]] = routes match {
-      case r :: rs => r.route(components) match {
-        case Some(found) => Some(found)
-        case None        => testRoutes(components, rs)
-      }
-      case _ => None
-    }
     val components = path.split("/").filter {
       case ""  => false
       case "." => false // XXX do we want to keep this?
       case _   => true
     }
-    testRoutes(components, routes.toList)
+    routes.view.flatMap(r => r.route(components)).headOption
   }
 
   def uriFor (mapping: Map[String, String]): Option[String] = {
@@ -40,12 +30,9 @@ class Router[T] {
     //   pass the validation for that component, it can't match
     // - if the route contains a default value, and that component also exists
     //   in the mapping, then the values must match
-    val possible = routes.toList.flatMap(r => {
-      r.pathWithMapping(mapping) match {
-        case Some(path) => Some(r -> path)
-        case None       => None
-      }
-    })
+    val possible = routes.toList.flatMap { r =>
+      r.pathWithMapping(mapping).map(p => r -> p)
+    }
 
     possible match {
       case Nil              => None
@@ -76,11 +63,9 @@ class Router[T] {
     val validations: Map[String, Regex],
     val target:      T
   ) {
-    import Route._
-
     lazy val variables = components.flatMap(getVariableName)
 
-    def route(
+    def route (
       parts:      Seq[String],
       components: Seq[String]         = components,
       mapping:    Map[String, String] = defaults
@@ -128,15 +113,12 @@ class Router[T] {
         val boundComponents = components.flatMap {
           case Optional(v) => {
             val component = (mapping get v).flatMap(validComponentValue(v, _))
-            defaults get v match {
-              case Some(default) => {
-                component.flatMap {
-                  case `default` => None
-                  case c         => Some(c)
-                }
+            defaults.get(v).map { default =>
+              component.flatMap {
+                case `default` => None
+                case c         => Some(c)
               }
-              case None => component
-            }
+            }.getOrElse(component)
           }
           case Variable(v) => validComponentValue(v, (mapping(v)))
           case literal     => Some(literal)
@@ -168,31 +150,24 @@ class Router[T] {
     }
 
     private def validate (name: String, component: String) =
-      validations get name match {
-        case Some(rx) => rx.findFirstIn(component).nonEmpty
-        case None     => true
-      }
+      validations.get(name).forall(_.findFirstIn(component).nonEmpty)
 
     private def validComponentValue (name: String, component: String) =
-      if (validate(name, component)) { Some(component) } else { None }
-  }
+      if (validate(name, component)) Some(component) else None
 
-  private object Route {
     private val Optional = """^\?:(.*)$""".r
     private val Variable = """^\??:(.*)$""".r
   }
 
-  private class AmbiguousRouteMapping(
+  private class AmbiguousRouteMapping (
     mapping: Map[String, String],
     paths:   Seq[String]
-  ) extends RuntimeException {
-    override def getMessage (): String = {
-      "Ambiguous path descriptor (specified keys " +
-      mapping.keys.mkString(", ")                  +
-      "): could match paths "                      +
+  ) extends RuntimeException(
+    "Ambiguous path descriptor (specified keys " +
+      mapping.keys.mkString(", ")                +
+      "): could match paths "                    +
       paths.mkString(", ")
-    }
-  }
+  )
 }
 
 class Match[T] (

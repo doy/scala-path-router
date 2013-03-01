@@ -1,9 +1,10 @@
+package org.perl8.router
+
 import org.scalatest.FunSuite
-import router.test._
 
-import router.Router
+import org.perl8.router.test._
 
-class Optional extends FunSuite {
+class OptionalTest extends FunSuite {
   val router = new Router[Boolean]
 
   router addRoute (
